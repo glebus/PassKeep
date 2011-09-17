@@ -30,15 +30,40 @@ class PassKeep:
 		password = self.__password
 		url = self.url
 		time = self.time
-		a = self.getMd5(password + url)
+		result = self.getMd5(password + url)
 		#b = self.getMd5(url + time)
 		#c = self.getMd5(time + password)
 		#d1 = self.getMd5(a + b + c)
 		#d2 = self.getMd5(d1)
 		#d3 = self.getMd5(d2)
 		#result = d1 + d2 + d3
-		result = a
-		return result[:self.__length]
+		passwd_candidate = result[:self.__length]
+		if (len(re.findall(r'([0-9]+)', passwd_candidate)[0]) + 3 < len(passwd_candidate)):
+			return passwd_candidate
+		else:
+			result = ""
+			count = 0
+			sum = 1
+			for symbol in passwd_candidate: 
+				if (sum < 4):
+					try:
+						int_symbol = int(symbol)
+						if (count%2 != 0):
+							print int_symbol
+							result += chr(97+int_symbol)
+							sum += 1
+							count += 1
+						else:
+							result += symbol
+							count += 1
+					except:
+						result += symbol
+						count += 1
+				else:
+					result += symbol
+					count += 1
+			return result
+
 
 p = PassKeep()
 passwd = raw_input("Enter passwd \n")
