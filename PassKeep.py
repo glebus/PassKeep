@@ -1,62 +1,82 @@
-import hashlib
-import time
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import sys
+from getpass import getpass
+import re
+import hashlib
 
-class PassKeep:
-	__password = ""
-	__length = 10
-	url = ""
-	time = ""
+class PassKeep(object):
+	"""Generate password from personal key and site name.
 
-	def getMd5(self, b):
-		b = str(b)
-		m = hashlib.md5()
-		m.update(b)
-		return m.hexdigest()
+		Usage:
+			p = PassKeep()
+			# Set password length
+			p.length = 8
+
+			# Request password
+			p.passphrase = getpass("Enter passphrase: ")
+			# Request site domain
+			p.site = raw_input("Enter site domain (like www.example.com): ")
+
+			# Show result
+			print p
+	"""
+
+	def getMD5(self, s):
+		md5 = hashlib.md5()
+		md5.update(str(s))
+		return md5.hexdigest()
 
 	def __init__(self):
-		self.__password = self.getMd5(self.__password)
-		self.time = self.getMd5(time.time())
+		self.length = 12
+		self._site = ""
+		self._passphrase = ""
+		self._pass = ""
+		self.__site_hash = ""
+		self.__passphrase_hash = ""
 
-	def setUrl(self, url):
-		self.url = self.getMd5(url)
-		return self.url
-		
-	def setPasswd(self, passwd):
-		self.__password = self.getMd5(passwd)
-		return self.__password
+	@property
+	def site(self):
+		return self._site
+	@site.setter
+	def site(self, v):
+		# TODO: Check for sitedomain "*.[a-zA-Z0-9-_].\d{2,3}"
+		self._site = v
+		self.__sitehash = self.getMD5(v)
+		return self.__sitehash
 
-	def decrypt(self):
-		password = self.__password
-		url = self.url
-		time = self.time
-		result = self.getMd5(password + url)
-		#b = self.getMd5(url + time)
-		#c = self.getMd5(time + password)
-		#d1 = self.getMd5(a + b + c)
-		#d2 = self.getMd5(d1)
-		#d3 = self.getMd5(d2)
-		#result = d1 + d2 + d3
-		passwd_candidate = result[:self.__length]
-		if (len(re.findall(r'([0-9]+)', passwd_candidate)[0]) + 3 < len(passwd_candidate)):
+	@property
+	def passphrase(self):
+		return self._passphrase
+	@passphrase.setter
+	def passphrase(self, v):
+		self.__passphrase_hash = self.getMD5(v)
+		return self._passphrase
+
+	def __str__(self):
+		# concat and gen hash
+		result = self.getMD5(self.__passphrase_hash + self.__site_hash)
+		passwd_candidate = result[:self.length]
+		# Magic. Don't touch it!'
+		if (len(re.findall(r'([0-9]+)', passwd_candidate)[0]) + 3 < len(passwd_candidate)): #Не менее трёх букв
 			return passwd_candidate
-		else:
+		else: # Need fix numbers in password
 			result = ""
 			count = 0
 			sum = 1
-			for symbol in passwd_candidate: 
-				if (sum < 4):
-					try:
+			for symbol in passwd_candidate:   #Получаем по одному символы и проверяем.
+				if (sum < 4):   #Если мы уже замени три цифры на буквы, то остальное просто добавляем.
+					try:   #Если символ не приводиться к int, то он str (кэп).
 						int_symbol = int(symbol)
-						if (count%2 != 0):
-							print int_symbol
-							result += chr(97+int_symbol)
+						if (count%2 != 0):   #Будем преобразовывать только нечётные по счету цифры.
+							result += chr(122 - int_symbol) #Заменим цифру на букву, которая находиться под тем же порядковым номером с конца алфавита, что б никто не догадался!
 							sum += 1
 							count += 1
-						else:
+						else:   #Если четная, то пусть не меняется.
 							result += symbol
 							count += 1
-					except:
+					except:   #Если он str то мы его просто добавляем к результату.
 						result += symbol
 						count += 1
 				else:
@@ -65,10 +85,19 @@ class PassKeep:
 			return result
 
 
-p = PassKeep()
-passwd = raw_input("Enter passwd \n")
-p.setPasswd(passwd)
-url = raw_input("Enter url, like www.example.com \n")
-p.setUrl(url)
-print p.decrypt()
-sys.exit(0)
+if __name__ == "__main__":
+	# create object
+	p = PassKeep()
+
+	p.length = 15
+	# Request password
+	p.passphrase = getpass("Enter passphrase: ")
+	# Request site domain
+	p.site = raw_input("Enter site domain (like www.example.com): ")
+
+	# Show result
+	print "Password from site '%s' is: %s" % (p.site, p)
+	sys.exit(0)
+
+
+# vim: set noet fenc=utf-8 ff=unix sts=0 sw=4 ts=4 :
