@@ -55,6 +55,10 @@ class PassKeep(object):
 		return self._passphrase
 
 	def __str__(self):
+		if self.__passphrase_hash is "":
+			raise NameError("Not found `passphrase` variable")
+		if self.__site_hash is "":
+			raise NameError("Not found `site` variable")
 		# concat and gen hash
 		result = self.getMD5(self.__passphrase_hash + self.__site_hash)
 		passwd_candidate = result[:self.length]
